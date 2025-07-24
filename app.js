@@ -1,4 +1,4 @@
-import { Lucid, Blockfrost,fromText } from "https://unpkg.com/lucid-cardano/web/mod.js";
+import { Lucid, Blockfrost,fromText, toHex} from "https://unpkg.com/lucid-cardano/web/mod.js";
 
 
  const preview = document.getElementById("preview");
@@ -10,20 +10,19 @@ const connectWalletButton= document.getElementById('connectWallet');
 const walletStatus = document.getElementById('walletStatus');
 const nftFile = document.getElementById('nftFile');
 const mintButton= document.getElementById("mintNFT")
+
+
+
 let lucid;
 let walletConnected = false;
 let connectedAddress = "";
 let ipfsCID = "";
-
 
 function hexToBytes(hex) {
   return hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16));
 }
 
 
-function toHex(bytes) {
-  return [...bytes].map(x => x.toString(16).padStart(2, "0")).join("");
-}
 
 // const wallet = new MeshWallet({ walletName: "nami" });
 // await wallet.enable();
@@ -36,15 +35,17 @@ function toHex(bytes) {
 // collect wallet
 connectWalletButton.addEventListener("click", async () => {
   try {
+    // Initialize Lucid with Blockfrost for Preprod 
     lucid = await Lucid.new(
       new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", "preprod2gprBjgiRCdggMZFOUgPntHpvdBWIpUz"),
       "Preprod"
     );
-
+// Connect Lace wallet to Lucid
     await lucid.selectWallet("lace");
-
+ // Manually enable Lace 
     const api = await window.cardano.lace.enable();
 
+     // Get wallet address: used or change address
     let hexAddress;
     const usedAddresses = await api.getUsedAddresses();
     if (usedAddresses && usedAddresses.length > 0) {
@@ -141,23 +142,31 @@ async function checkLaceWallet() {
   // Wait for wallet injection (some wallets take time)
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  if (typeof window === 'undefined' || !window.lace) {
-    console.error("Lace wallet not detected in window object");
+  if (typeof window === 'undefined' || !window.cardano?.lace) {
+    console.error("Lace wallet not detected in window.cardano");
     return false;
   }
   
-  try {
-    // Double-check enable method exists
-    if (typeof window.lace.enable !== 'function') {
-      console.error("Lace.enable is not a function");
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error("Wallet detection error:", err);
+  if (typeof window.cardano.lace.enable !== 'function') {
+    console.error("Lace wallet found, but `.enable()` is missing");
     return false;
   }
+
+  return true;
 }
+  
+  // try {
+  //   // Double-check enable method exists
+  //   if (typeof window.cardano.lace.enable !== 'function') {
+  //     console.error("Lace enable is not a function");
+  //     return false;
+  //   }
+  //   return true;
+  // } catch (err) {
+  //   console.error("Wallet detection error:", err);
+  //   return false;
+  // }
+
 
 // 2. Main minting function
 document.getElementById("mintNFT").addEventListener("click", async () => {
@@ -177,14 +186,14 @@ document.getElementById("mintNFT").addEventListener("click", async () => {
 
     // Initialize Lucid with Lace wallet
     const lucid = await Lucid.new(
-      new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", "your_blockfrost_key"),
+      new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", "preprod2gprBjgiRCdggMZFOUgPntHpvdBWIpUz"),
       "Preprod"
     );
     
     // Enable wallet
     try {
-      await window.lace.enable();
-      lucid.selectWallet("lace");
+      const laceApi = await window.cardano.lace.enable();
+      await lucid.selectWallet(laceApi);
     } catch (err) {
       alert("🔴 Wallet connection failed. Please:\n1. Unlock Lace wallet\n2. Check popup blocker\n3. Try again");
       console.error("Wallet enable error:", err);
@@ -205,9 +214,11 @@ document.getElementById("mintNFT").addEventListener("click", async () => {
 
     // Get payment credential
     let paymentCredential;
+    let addressDetails;
     try {
-      const addressDetails = lucid.utils.getAddressDetails(address);
+      addressDetails = lucid.utils.getAddressDetails(address);
       paymentCredential = addressDetails.paymentCredential;
+      
       if (!paymentCredential?.hash) throw new Error("Missing payment credential");
       console.log("Payment credential hash:", paymentCredential.hash);
     } catch (err) {
@@ -216,8 +227,64 @@ document.getElementById("mintNFT").addEventListener("click", async () => {
       return;
     }
 
-    // [Rest of your minting code...]
-    // Include all the validation and minting logic from previous examples
+//   const keyHash = addressDetails.paymentCredential.hash;
+
+//      // 2. Create simple policy script (wallet signature based)
+//     const policy = lucid.utils.nativeScriptFromJson({
+//       type: "sig",
+//       keyHash: keyHash,
+//     });
+ 
+
+
+
+//   const name = document.getElementById("nftName").value.trim();
+// const description = document.getElementById("nftDescription").value.trim();
+// const ipfsCID = "bafybeihsiw5icbnpzzvbopoq6p6e74jmo46juswrylekd6nzwamhokvlwe"; // example
+
+// const policyId = String(lucid.utils.mintingPolicyToId(policy));
+// const assetNameHex = String(toHex(fromText(name)));
+// const assetId = policyId + assetNameHex;
+
+// // ✅ Build metadata721 safely
+// const metadata721 = {
+//   [policyId]: {
+//     [assetNameHex]: {
+//       name: name,
+//       image: `ipfs://${ipfsCID}`,
+//       mediaType: "audio/mpeg",
+//       description: description,
+//     }
+//   }
+// };
+
+// // ✅ Build mintObj safely
+// const mintObj = {};
+// mintObj[assetId] = 1n;
+
+// console.log("✅ assetId:", assetId, typeof assetId);
+// console.log("✅ assetId hex valid:", /^[0-9a-f]+$/i.test(assetId));
+// console.log("✅ mintObj:", mintObj);
+// console.log("✅ metadata721:", metadata721);
+
+
+// // ✅ Final transaction
+// const tx = await lucid
+//   .newTx()
+//   .mintAssets(mintObj, policy)
+//   .attachMetadata(721, metadata721)
+//   .validTo(Date.now() + 3600000)
+//   .complete();
+
+
+
+
+//     const signedTx = await tx.sign().complete();
+//     const txHash = await signedTx.submit();
+
+//     console.log("✅ NFT Minted. Tx Hash:", txHash);
+//     alert(`✅ NFT Minted! Tx Hash:\n${txHash}`);
+
     
   } catch (err) {
     console.error("FINAL ERROR:", err);
