@@ -4,6 +4,7 @@ import {
   fromText,
   toHex,
 } from "https://unpkg.com/lucid-cardano/web/mod.js";
+import { uploadToIPFS } from "./lightHouse.js";
 
 const preview = document.getElementById("preview");
 const uploadButton = document.getElementById("uploadToIPFS");
@@ -61,6 +62,12 @@ connectWalletButton.addEventListener("click", async () => {
 
 // Upload to Lighthouse Storage
 uploadButton.addEventListener("click", async () => {
+  if (!walletConnected) {
+    console.error("Wallet is not connected");
+    alert("Wallet is not connected");
+    return;
+  }
+
   const fileInput = document.getElementById("nftFile");
   const nameInput = document.getElementById("nftName");
   const descInput = document.getElementById("nftDescription");
@@ -74,36 +81,10 @@ uploadButton.addEventListener("click", async () => {
     return;
   }
 
-  const formData = new FormData();
-  formData.append("file", file);
-
-  try {
-    const res = await fetch("https://node.lighthouse.storage/api/v0/add", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer bde2fdf6.76bbf75d895f417f83c2b7db801f7a33",
-      },
-      body: formData,
-    });
-
-    const text = await res.text();
-    console.log("Lighthouse response text:", text);
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (err) {
-      throw new Error("Invalid JSON returned by Lighthouse");
-    }
-
-    if (!data.Hash) throw new Error("Upload failed");
-
-    ipfsCID = data.Hash;
-    alert(`✅ Uploaded to IPFS: ${ipfsCID}`);
-  } catch (err) {
-    alert("❌ Upload failed: " + err.message);
-    console.error("❌ Upload failed:", err);
-  }
+  const { cid, previewUrl } = await uploadToIPFS(file, name, desc);
+  console.log(`Preview at: ${previewUrl}`);
+  ipfsCID = cid;
+  alert(`✅ Uploaded to IPFS: ${ipfsCID}\n✅ Preview at: ${previewUrl}`);
 });
 
 // Mint NFT button functionality
