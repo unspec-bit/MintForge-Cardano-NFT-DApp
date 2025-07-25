@@ -10,7 +10,7 @@ export async function uploadToIPFS(file, name, description) {
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
-      body: formData
+      body: formData,
     });
 
     const result = await response.json();
@@ -23,16 +23,15 @@ export async function uploadToIPFS(file, name, description) {
     const metadata = {
       name,
       description,
-      image: `ipfs://${result.Hash}`
+      image: `ipfs://${result.Hash}`,
     };
 
     return {
       cid: result.Hash,
       metadata,
-      previewUrl: `https://ipfs.io/ipfs/${result.Hash}`
+      previewUrl: `https://gateway.lighthouse.storage/ipfs/${result.Hash}`,
     };
   } catch (error) {
     throw new Error("Upload failed: " + error.message);
   }
 }
-
