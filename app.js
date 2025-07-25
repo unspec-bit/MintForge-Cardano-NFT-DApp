@@ -1,17 +1,16 @@
-import { Lucid, Blockfrost,fromText, toHex} from "https://unpkg.com/lucid-cardano/web/mod.js";
+import {
+  Lucid,
+  Blockfrost,
+  fromText,
+  toHex,
+} from "https://unpkg.com/lucid-cardano/web/mod.js";
 
-
- const preview = document.getElementById("preview");
-//  const nftName = document.getElementById("nftName");
-//  const nftDescription = document.getElementById("nftDescription");
- const uploadButton = document.getElementById("uploadToIPFS");
-//  const resultDisplay = document.getElementById("ipfsResult");
-const connectWalletButton= document.getElementById('connectWallet');
-const walletStatus = document.getElementById('walletStatus');
-const nftFile = document.getElementById('nftFile');
-const mintButton= document.getElementById("mintNFT")
-
-
+const preview = document.getElementById("preview");
+const uploadButton = document.getElementById("uploadToIPFS");
+const connectWalletButton = document.getElementById("connectWallet");
+const walletStatus = document.getElementById("walletStatus");
+const nftFile = document.getElementById("nftFile");
+const mintButton = document.getElementById("mintNFT");
 
 let lucid;
 let walletConnected = false;
@@ -19,33 +18,26 @@ let connectedAddress = "";
 let ipfsCID = "";
 
 function hexToBytes(hex) {
-  return hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16));
+  return hex.match(/.{1,2}/g).map((byte) => parseInt(byte, 16));
 }
-
-
-
-// const wallet = new MeshWallet({ walletName: "nami" });
-// await wallet.enable();
-// const address = await wallet.getUsedAddress();
-// walletStatus.textContent = `Wallet connected: ${address}`;
-
-
-
 
 // collect wallet
 connectWalletButton.addEventListener("click", async () => {
   try {
-    // Initialize Lucid with Blockfrost for Preprod 
+    // Initialize Lucid with Blockfrost for Preprod
     lucid = await Lucid.new(
-      new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", "preprod2gprBjgiRCdggMZFOUgPntHpvdBWIpUz"),
-      "Preprod"
+      new Blockfrost(
+        "https://cardano-preprod.blockfrost.io/api/v0",
+        "preprod2gprBjgiRCdggMZFOUgPntHpvdBWIpUz",
+      ),
+      "Preprod",
     );
-// Connect Lace wallet to Lucid
+    // Connect Lace wallet to Lucid
     await lucid.selectWallet("lace");
- // Manually enable Lace 
+    // Manually enable Lace
     const api = await window.cardano.lace.enable();
 
-     // Get wallet address: used or change address
+    // Get wallet address: used or change address
     let hexAddress;
     const usedAddresses = await api.getUsedAddresses();
     if (usedAddresses && usedAddresses.length > 0) {
@@ -56,10 +48,10 @@ connectWalletButton.addEventListener("click", async () => {
 
     if (!hexAddress) throw new Error("No address returned from wallet");
 
-const address = hexAddress; // using it directly
-walletConnected = true;
-connectedAddress = address;
-  
+    const address = hexAddress; // using it directly
+    walletConnected = true;
+    connectedAddress = address;
+
     walletStatus.textContent = `✅ Connected: ${address}`;
   } catch (e) {
     walletStatus.textContent = "❌ Wallet connection failed";
@@ -67,13 +59,6 @@ connectedAddress = address;
   }
 });
 
-
-
-  //   lucid.selectWallet(walletApi);
-
-  
-
- 
 // Upload to Lighthouse Storage
 uploadButton.addEventListener("click", async () => {
   const fileInput = document.getElementById("nftFile");
@@ -96,7 +81,7 @@ uploadButton.addEventListener("click", async () => {
     const res = await fetch("https://node.lighthouse.storage/api/v0/add", {
       method: "POST",
       headers: {
-      Authorization: "Bearer bde2fdf6.76bbf75d895f417f83c2b7db801f7a33",
+        Authorization: "Bearer bde2fdf6.76bbf75d895f417f83c2b7db801f7a33",
       },
       body: formData,
     });
@@ -121,81 +106,61 @@ uploadButton.addEventListener("click", async () => {
   }
 });
 
-
-//     // Show preview image if it's an image
-//     if (file.type.startsWith("image/")) {
-//       const preview = document.getElementById("previewImage");
-//       preview.src = result.previewUrl;
-//       preview.style.display = "block";
-//     }
-//   } catch (error) {
-//     alert("❌ Upload failed: " + error.message);
-//   }
-// });
-
-
-
 // Mint NFT button functionality
 
 // 1. First ensure Lace wallet is properly detected
 async function checkLaceWallet() {
   // Wait for wallet injection (some wallets take time)
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  if (typeof window === 'undefined' || !window.cardano?.lace) {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  if (typeof window === "undefined" || !window.cardano?.lace) {
     console.error("Lace wallet not detected in window.cardano");
     return false;
   }
-  
-  if (typeof window.cardano.lace.enable !== 'function') {
+
+  if (typeof window.cardano.lace.enable !== "function") {
     console.error("Lace wallet found, but `.enable()` is missing");
     return false;
   }
 
   return true;
 }
-  
-  // try {
-  //   // Double-check enable method exists
-  //   if (typeof window.cardano.lace.enable !== 'function') {
-  //     console.error("Lace enable is not a function");
-  //     return false;
-  //   }
-  //   return true;
-  // } catch (err) {
-  //   console.error("Wallet detection error:", err);
-  //   return false;
-  // }
-
 
 // 2. Main minting function
 document.getElementById("mintNFT").addEventListener("click", async () => {
   const mintButton = document.getElementById("mintNFT");
-  
+
   try {
     // Disable button during processing
     mintButton.disabled = true;
     mintButton.textContent = "Processing...";
-    
+
     // Verify Lace wallet
     const walletAvailable = await checkLaceWallet();
     if (!walletAvailable) {
-      alert("🔴 Lace wallet not detected. Please:\n1. Install Lace wallet\n2. Refresh page\n3. Ensure extension is enabled");
+      alert(
+        "🔴 Lace wallet not detected. Please:\n1. Install Lace wallet\n2. Refresh page\n3. Ensure extension is enabled",
+      );
       return;
     }
 
     // Initialize Lucid with Lace wallet
     const lucid = await Lucid.new(
-      new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", "preprod2gprBjgiRCdggMZFOUgPntHpvdBWIpUz"),
-      "Preprod"
+      new Blockfrost(
+        "https://cardano-preprod.blockfrost.io/api/v0",
+        "preprod2gprBjgiRCdggMZFOUgPntHpvdBWIpUz",
+      ),
+      "Preprod",
     );
-    
+
     // Enable wallet
     try {
       const laceApi = await window.cardano.lace.enable();
       await lucid.selectWallet(laceApi);
     } catch (err) {
-      alert("🔴 Wallet connection failed. Please:\n1. Unlock Lace wallet\n2. Check popup blocker\n3. Try again");
+      alert(
+        "🔴 Wallet connection failed. Please:\n1. Unlock Lace wallet\n2. Check popup blocker\n3. Try again",
+      );
       console.error("Wallet enable error:", err);
       return;
     }
@@ -218,8 +183,9 @@ document.getElementById("mintNFT").addEventListener("click", async () => {
     try {
       addressDetails = lucid.utils.getAddressDetails(address);
       paymentCredential = addressDetails.paymentCredential;
-      
-      if (!paymentCredential?.hash) throw new Error("Missing payment credential");
+
+      if (!paymentCredential?.hash)
+        throw new Error("Missing payment credential");
       console.log("Payment credential hash:", paymentCredential.hash);
     } catch (err) {
       alert("❌ Invalid wallet address format");
@@ -227,68 +193,61 @@ document.getElementById("mintNFT").addEventListener("click", async () => {
       return;
     }
 
-//   const keyHash = addressDetails.paymentCredential.hash;
+    //   const keyHash = addressDetails.paymentCredential.hash;
 
-//      // 2. Create simple policy script (wallet signature based)
-//     const policy = lucid.utils.nativeScriptFromJson({
-//       type: "sig",
-//       keyHash: keyHash,
-//     });
- 
+    //      // 2. Create simple policy script (wallet signature based)
+    //     const policy = lucid.utils.nativeScriptFromJson({
+    //       type: "sig",
+    //       keyHash: keyHash,
+    //     });
 
+    //   const name = document.getElementById("nftName").value.trim();
+    // const description = document.getElementById("nftDescription").value.trim();
+    // const ipfsCID = "bafybeihsiw5icbnpzzvbopoq6p6e74jmo46juswrylekd6nzwamhokvlwe"; // example
 
+    // const policyId = String(lucid.utils.mintingPolicyToId(policy));
+    // const assetNameHex = String(toHex(fromText(name)));
+    // const assetId = policyId + assetNameHex;
 
-//   const name = document.getElementById("nftName").value.trim();
-// const description = document.getElementById("nftDescription").value.trim();
-// const ipfsCID = "bafybeihsiw5icbnpzzvbopoq6p6e74jmo46juswrylekd6nzwamhokvlwe"; // example
+    // // ✅ Build metadata721 safely
+    // const metadata721 = {
+    //   [policyId]: {
+    //     [assetNameHex]: {
+    //       name: name,
+    //       image: `ipfs://${ipfsCID}`,
+    //       mediaType: "audio/mpeg",
+    //       description: description,
+    //     }
+    //   }
+    // };
 
-// const policyId = String(lucid.utils.mintingPolicyToId(policy));
-// const assetNameHex = String(toHex(fromText(name)));
-// const assetId = policyId + assetNameHex;
+    // // ✅ Build mintObj safely
+    // const mintObj = {};
+    // mintObj[assetId] = 1n;
 
-// // ✅ Build metadata721 safely
-// const metadata721 = {
-//   [policyId]: {
-//     [assetNameHex]: {
-//       name: name,
-//       image: `ipfs://${ipfsCID}`,
-//       mediaType: "audio/mpeg",
-//       description: description,
-//     }
-//   }
-// };
+    // console.log("✅ assetId:", assetId, typeof assetId);
+    // console.log("✅ assetId hex valid:", /^[0-9a-f]+$/i.test(assetId));
+    // console.log("✅ mintObj:", mintObj);
+    // console.log("✅ metadata721:", metadata721);
 
-// // ✅ Build mintObj safely
-// const mintObj = {};
-// mintObj[assetId] = 1n;
+    // // ✅ Final transaction
+    // const tx = await lucid
+    //   .newTx()
+    //   .mintAssets(mintObj, policy)
+    //   .attachMetadata(721, metadata721)
+    //   .validTo(Date.now() + 3600000)
+    //   .complete();
 
-// console.log("✅ assetId:", assetId, typeof assetId);
-// console.log("✅ assetId hex valid:", /^[0-9a-f]+$/i.test(assetId));
-// console.log("✅ mintObj:", mintObj);
-// console.log("✅ metadata721:", metadata721);
+    //     const signedTx = await tx.sign().complete();
+    //     const txHash = await signedTx.submit();
 
-
-// // ✅ Final transaction
-// const tx = await lucid
-//   .newTx()
-//   .mintAssets(mintObj, policy)
-//   .attachMetadata(721, metadata721)
-//   .validTo(Date.now() + 3600000)
-//   .complete();
-
-
-
-
-//     const signedTx = await tx.sign().complete();
-//     const txHash = await signedTx.submit();
-
-//     console.log("✅ NFT Minted. Tx Hash:", txHash);
-//     alert(`✅ NFT Minted! Tx Hash:\n${txHash}`);
-
-    
+    //     console.log("✅ NFT Minted. Tx Hash:", txHash);
+    //     alert(`✅ NFT Minted! Tx Hash:\n${txHash}`);
   } catch (err) {
     console.error("FINAL ERROR:", err);
-    alert(`Minting failed: ${err.message || "Unknown error"}\n\nCheck console for details`);
+    alert(
+      `Minting failed: ${err.message || "Unknown error"}\n\nCheck console for details`,
+    );
   } finally {
     mintButton.disabled = false;
     mintButton.textContent = "Mint NFT";
