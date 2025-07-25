@@ -1,6 +1,10 @@
 import {
   Lucid,
+  Constr,
   Blockfrost,
+  Data,
+  applyDoubleCborEncoding,
+  applyParamsToScript,
   fromText,
   toHex,
 } from "https://unpkg.com/lucid-cardano/web/mod.js";
@@ -107,6 +111,26 @@ async function checkLaceWallet() {
   return true;
 }
 
+function applyParams(tokname, outref, validator) {
+  const outRef = new Constr(0, [
+    new Constr(0, [outref.txHash]),
+    BigInt(outref.outputIndex),
+  ]);
+
+  const token = applyParamsToScript(validator, [fromText(tokname), outRef]);
+
+  const policyId = validatorToScriptHash({
+    type: "PlutusV2",
+    script: token,
+  });
+
+  return {
+    redeem: { type: "PlutusV2", script: applyDoubleCborEncoding(token) },
+    token: { type: "PlutusV2", script: applyDoubleCborEncoding(token) },
+    policyId,
+  };
+}
+
 // 2. Main minting function
 document.getElementById("mintNFT").addEventListener("click", async () => {
   const mintButton = document.getElementById("mintNFT");
@@ -173,6 +197,28 @@ document.getElementById("mintNFT").addEventListener("click", async () => {
       console.error("Credential error:", err);
       return;
     }
+
+    const blueprint = await (await fetch("./plutus.json")).json();
+    const mintforgeValidator = blueprint.validators[0];
+    const tokenName = "WhatsApp Avatar";
+    const utxos = await lucid.wallet.getUtxos();
+    if (utxos.length == 0) {
+      alert("No unused transactions in the wallet");
+      return;
+    }
+    console.log("utxos:", utxos);
+    const utxo = utxos[0];
+    const outputReference = {
+      txHash: utxo.txHash,
+      outputIndex: utxo.outputIndex,
+    };
+    const contracts = applyParams(
+      tokenName,
+      outputReference,
+      mintforgeValidator.compiledCode,
+    );
+
+    console.log(`contracts = ${contracts}`);
 
     //   const keyHash = addressDetails.paymentCredential.hash;
 
